@@ -11,7 +11,6 @@ class SongRepositoryFirebase extends SongRepository {
     'w8-practice-53cd2-default-rtdb.asia-southeast1.firebasedatabase.app',
   );
   static final Uri songUri = baseUri.replace(path: 'songs.json');
-  // static final Uri artistUri = baseUri.replace(path: 'artists');
 
   @override
   Future<List<Song>> fetchSongs() async {
