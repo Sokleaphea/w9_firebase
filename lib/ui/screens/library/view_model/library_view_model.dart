@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:w9_firebase/data/repositories/artists/artist_repository.dart';
+import 'package:w9_firebase/model/artists/artist.dart';
+import 'package:w9_firebase/model/songs/song_and_artist.dart';
 import '../../../../data/repositories/songs/song_repository.dart';
 import '../../../states/player_state.dart';
 import '../../../../model/songs/song.dart';
@@ -6,11 +9,16 @@ import '../../../utils/async_value.dart';
 
 class LibraryViewModel extends ChangeNotifier {
   final SongRepository songRepository;
+  final ArtistRepository artistRepository;
   final PlayerState playerState;
 
-  AsyncValue<List<Song>> songsValue = AsyncValue.loading();
+  AsyncValue<List<SongAndArtist>> songsValue = AsyncValue.loading();
 
-  LibraryViewModel({required this.songRepository, required this.playerState}) {
+  LibraryViewModel({
+    required this.songRepository,
+    required this.playerState,
+    required this.artistRepository,
+  }) {
     playerState.addListener(notifyListeners);
 
     // init
@@ -35,17 +43,26 @@ class LibraryViewModel extends ChangeNotifier {
     try {
       // 2- Fetch is successfull
       List<Song> songs = await songRepository.fetchSongs();
-      songsValue = AsyncValue.success(songs);
+      List<Artist> artists = await artistRepository.fetchArtists();
+      List<SongAndArtist> songAndArtist = [];
+      for (Song song in songs) {
+        for (Artist artist in artists) {
+          if (song.artistId == artist.id) {
+            songAndArtist.add((SongAndArtist(song: song, artist: artist)));
+            break;
+          }
+        }
+      }
+      songsValue = AsyncValue.success(songAndArtist);
     } catch (e) {
       // 3- Fetch is unsucessfull
       songsValue = AsyncValue.error(e);
     }
-     notifyListeners();
-
+    notifyListeners();
   }
 
-  bool isSongPlaying(Song song) => playerState.currentSong == song;
+  bool isSongPlaying(SongAndArtist songAndArtist) => playerState.currentSong == songAndArtist.song;
 
-  void start(Song song) => playerState.start(song);
-  void stop(Song song) => playerState.stop();
+  void start(SongAndArtist songAndArtist) => playerState.start(songAndArtist.song);
+  void stop() => playerState.stop();
 }
